@@ -1,16 +1,14 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "commonjs",
-    "rootDir": "discord-bot/src",
+    "module": "CommonJS",
     "outDir": "dist",
-    "strict": true,
+    "rootDir": "discord-bot/src",
     "esModuleInterop": true,
-    "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "moduleResolution": "node",
-    "resolveJsonModule": true,
-    "types": ["node"]   // <---- DODAJ TO
+    "strict": true,
+    "skipLibCheck": true,
+    "moduleResolution": "node"
   },
   "include": ["discord-bot/src/**/*"],
   "exclude": ["node_modules", "dist"]
