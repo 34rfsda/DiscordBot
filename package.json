@@ -5,7 +5,7 @@
   "main": "discord-bot/dist/bot.js",
   "scripts": {
     "start": "node discord-bot/dist/bot.js",
-    "build": "tsc -p discord-bot/tsconfig.json",
+    "build": "tsc -p tsconfig.json",
     "dev": "ts-node-dev discord-bot/src/bot.ts"
   },
   "dependencies": {
