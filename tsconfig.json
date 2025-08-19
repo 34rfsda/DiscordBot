@@ -6,7 +6,9 @@
     "target": "es2020",
     "strict": true,
     "esModuleInterop": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "moduleResolution": "node",
+    "types": ["node"]
   },
   "include": ["discord-bot/src/**/*"],
   "exclude": ["node_modules", "**/*.spec.ts"]
