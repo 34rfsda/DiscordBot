@@ -1,14 +1,13 @@
 {
   "compilerOptions": {
-    "target": "ES2020",            // nowoczesny JS
-    "module": "commonjs",          // Node.js używa CommonJS
-    "strict": true,                // włącz wszystkie sprawdzenia typów
-    "esModuleInterop": true,       // pozwala importować moduły commonjs jako default
-    "skipLibCheck": true,          // pomija sprawdzanie typów w node_modules
-    "forceConsistentCasingInFileNames": true,
-    "outDir": "./dist",            // gdzie trafi skompilowany JS
-    "rootDir": "./src"             // skąd brany jest TS
+    "outDir": "discord-bot/dist",
+    "rootDir": "discord-bot/src",
+    "module": "commonjs",
+    "target": "es2020",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true
   },
-  "include": ["src/**/*"],         // wszystkie pliki TS w src
+  "include": ["discord-bot/src/**/*"],
   "exclude": ["node_modules", "**/*.spec.ts"]
 }
