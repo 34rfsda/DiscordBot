@@ -73,14 +73,14 @@ function saveSubmittedUsers() {
     fs.writeFileSync(SUBMITTED_FILE, JSON.stringify([...submittedUsers]), 'utf-8');
 }
 
-// Funkcja resetująca nicki
+// FUNKCJA RESETU – PEWNIE WYCZYŚCI PLIK I LOKALNE DANE
 async function resetNicki() {
-    // wyczyść lokalnie
-    submittedUsers.clear();
-    saveSubmittedUsers(); // pusty plik na dysku
-
-    // wyczyść plik na Google Drive
     try {
+        // Wyczyść lokalnie
+        submittedUsers.clear();
+        saveSubmittedUsers();
+
+        // Wyczyść plik na Google Drive
         await drive.files.update({
             fileId: DRIVE_FILE_ID,
             media: {
@@ -88,9 +88,10 @@ async function resetNicki() {
                 body: '', // pusty plik
             },
         });
-        console.log('Nicki zostały zresetowane lokalnie i na Google Drive.');
+
+        console.log('Nicki zostały wyczyszczone na Google Drive.');
     } catch (err: any) {
-        console.error('Nie udało się zresetować nicków na Google Drive:', err);
+        console.error('Błąd podczas resetu nicków na Drive:', err);
     }
 }
 
