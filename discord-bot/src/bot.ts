@@ -1,5 +1,14 @@
 import 'dotenv/config';
-import { Client, GatewayIntentBits, PermissionsBitField, REST, Routes, InteractionType, Message } from 'discord.js';
+import { 
+    Client, 
+    GatewayIntentBits, 
+    PermissionsBitField, 
+    REST, 
+    Routes, 
+    InteractionType, 
+    Message, 
+    TextChannel 
+} from 'discord.js';
 import { google } from 'googleapis';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -30,7 +39,7 @@ function isValidNick(nick: string): boolean {
 
 // Google Drive setup
 const auth = new google.auth.GoogleAuth({
-    keyFile: path.join(__dirname, '../../nicki-469405-bc070fe88234.json'),
+    credentials: JSON.parse(process.env.GOOGLE_CREDENTIALS!),
     scopes: ['https://www.googleapis.com/auth/drive'],
 });
 const drive = google.drive({ version: 'v3', auth });
@@ -64,6 +73,22 @@ function saveSubmittedUsers() {
     fs.writeFileSync(SUBMITTED_FILE, JSON.stringify([...submittedUsers]), 'utf-8');
 }
 
+// Funkcja resetująca nicki
+async function resetNicki() {
+    // wyczyść lokalnie
+    submittedUsers.clear();
+    saveSubmittedUsers();
+
+    // wyczyść plik na Google Drive
+    await drive.files.update({
+        fileId: DRIVE_FILE_ID,
+        media: {
+            mimeType: 'text/plain',
+            body: '',
+        },
+    });
+}
+
 // Rejestracja komend slash
 client.on('ready', async () => {
     console.log(`Bot zalogowany jako ${client.user?.tag}`);
@@ -78,71 +103,54 @@ client.on('ready', async () => {
                 },
                 {
                     name: 'nicki-reset',
-                    description: 'Resetuje wszystkie nicki i pozwala na wpisanie nowych',
+                    description: 'Resetuje wszystkie zapisane nicki',
                 }
             ],
         }
     );
 });
 
-// Obsługa komend
 client.on('interactionCreate', async (interaction) => {
     if (interaction.type !== InteractionType.ApplicationCommand) return;
 
-    // Ustawienie kanału
+    const ephemeralFlag = 64;
+
     if (interaction.commandName === 'nicki-tutaj') {
         if (interaction.memberPermissions?.has(PermissionsBitField.Flags.Administrator)) {
             nickChannelId = interaction.channelId;
-            await interaction.reply({ content: 'Ten kanał został ustawiony jako kanał do wpisywania nicków.', ephemeral: true });
+            await interaction.reply({ content: 'Ten kanał został ustawiony jako kanał do wpisywania nicków.', flags: ephemeralFlag });
         } else {
-            await interaction.reply({ content: 'Nie masz uprawnień do tej komendy.', ephemeral: true });
+            await interaction.reply({ content: 'Nie masz uprawnień do tej komendy.', flags: ephemeralFlag });
         }
     }
 
-    // Reset nicków
     if (interaction.commandName === 'nicki-reset') {
-        if (!interaction.memberPermissions?.has(PermissionsBitField.Flags.Administrator)) {
-            await interaction.reply({ content: 'Nie masz uprawnień do tej komendy.', ephemeral: true });
-            return;
-        }
-
-        // Reset lokalnego Set i zapis do pliku
-        submittedUsers.clear();
-        saveSubmittedUsers();
-
-        // Wyczyszczenie treści pliku na Google Drive
-        try {
-            await drive.files.update({
-                fileId: DRIVE_FILE_ID,
-                media: {
-                    mimeType: 'text/plain',
-                    body: '',  // pusty plik -> wszystkie nicki usunięte
-                },
-            });
-
-            await interaction.reply({ content: 'Wszystkie nicki zostały usunięte z Google Drive i można wpisywać nowe.', ephemeral: true });
-        } catch (err: any) {
-            console.error('Błąd podczas resetu nicków:', err);
-            await interaction.reply({ content: `Błąd podczas resetu: ${err?.message || err}`, ephemeral: true });
+        if (interaction.memberPermissions?.has(PermissionsBitField.Flags.Administrator)) {
+            await resetNicki();
+            await interaction.reply({ content: 'Wszystkie nicki zostały zresetowane.', flags: ephemeralFlag });
+        } else {
+            await interaction.reply({ content: 'Nie masz uprawnień do tej komendy.', flags: ephemeralFlag });
         }
     }
 });
 
-// Obsługa wiadomości
 client.on('messageCreate', async (message: Message) => {
     if (message.author.bot) return;
-    if (!nickChannelId) return;
-    if (message.channel.id !== nickChannelId) return;
 
-    // Obsługa wiadomości admina z "!"
+    // Obsługa wiadomości admina z !
     if (message.content.startsWith('!') && message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) {
-        const newContent = message.content.slice(1); // usuwa wykrzyknik
-        await message.channel.send(newContent);       // wysyła wiadomość bez !
-        await message.delete();                        // usuwa oryginał
+        const newContent = message.content.slice(1); // usuń wykrzyknik
+        if (message.channel instanceof TextChannel) {
+            await message.channel.send(newContent);
+        }
+        await message.delete();
         return;
     }
 
-    // Obsługa zwykłego użytkownika
+    if (!nickChannelId) return;
+    if (message.channel.id !== nickChannelId) return;
+
+    // Sprawdzenie, czy user już wysłał nick
     if (submittedUsers.has(message.author.id)) {
         await message.delete();
         await message.author.send('Możesz wpisać swój nick tylko raz.');
@@ -160,7 +168,7 @@ client.on('messageCreate', async (message: Message) => {
     try {
         await appendNickToDrive(message.content);
         submittedUsers.add(message.author.id);
-        saveSubmittedUsers();
+        saveSubmittedUsers(); // zapisujemy do pliku, żeby pamiętać po restarcie
         await message.author.send(`Twój nick "${message.content}" został dodany!`);
     } catch (err: any) {
         console.error('Błąd podczas zapisu nicku:', err);
